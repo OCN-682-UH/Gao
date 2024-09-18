@@ -24,12 +24,15 @@ my_sum <- subset(penguins, !is.na(sex)) %>%
     sd=sd(body_mass_g)
   )
 
+view(penguins)
 #make a body mass vs sex violin plot, with separate plots for each sp
-ggplot(subset(penguins, !is.na(sex)), # remove data where sex is NA
-       mapping = aes(x = sex, # use sex for x axis
+ penguins %>%
+  drop_na(sex) %>%
+ggplot( # remove data where sex is NA
+      mapping = aes(x = sex, # use sex for x axis
                      y = body_mass_g, # use body mass for y axis
-                     group = species, # group above data by species
-                     color = species)) + # then label each sex diff colors
+                     #group = sex, # group above data by species
+                     color = sex) )+ # then label each sex diff colors
   geom_jitter() + # use jitterplot
   geom_violin(alpha = 0.5,) + # also violin plot
   #geom_errorbar(aes(x = sex, ymin=mean-sd, ymax=mean+sd)) + #also add error bars w +/-1 standard deviation, but this isnt working? 
@@ -42,5 +45,5 @@ ggplot(subset(penguins, !is.na(sex)), # remove data where sex is NA
   theme(legend.position="none") # remove the legend
 
 #export plot
-ggsave(here("week3", "output", "penguinplot_HW.png"), 
+ggsave(here("week3", "output", "penguinplot_HW_new.png"), 
        width = 7, height = 5)

@@ -45,8 +45,8 @@ facet_titles <- c(BP = "Black Point", W = "Wailupe")
 ChemData_clean %>%
   ggplot(aes(x = avg_temp_in, y = avg_salinity, #denote x and y
              group = Site,
-             shape = Zone,
-             color = Time)) + #change color based on time
+             color = Zone,
+             shape = Time)) + #change color based on time
   geom_point() + #make scatterplot
   facet_wrap(~Site, 
              labeller = labeller(Site = facet_titles)) + 

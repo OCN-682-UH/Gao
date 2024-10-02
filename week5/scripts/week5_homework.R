@@ -30,7 +30,7 @@ CondDataClean <- CondData %>%
 
 #depth data
 is.character(DepthData$date) #character is yes
-
+#mutate(as.character())
 DepthDataClean <- DepthData %>%
   mutate(date = ymd_hms(date)) # just make sure date is in date format
 
@@ -54,7 +54,7 @@ averaged %>%
   geom_point(alpha = 0.3, color = "cadetblue2") + #make scatterplot
   geom_smooth(span = .6, color = "black", linewidth = .5) + #add best fit line
   facet_wrap(~variables, scales = "free",  labeller = labeller(variables = facet_titles)) + # facet by variables, make pot axes independent, change faceted plot titles
-  labs(title = "Dept, Salinity, and Temperature Over Time",
+  labs(title = "Depth, Salinity, and Temperature Over Time",
        subtitle = "Taken on 2021/1/15",
        x = "Time", 
        y = element_blank()) # changing x, removing Y labels

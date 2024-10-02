@@ -1,0 +1,47 @@
+---
+title: "Penguins :)"
+author: "Diana Gao"
+date: "2024-10-01"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: darkly
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE)
+```
+
+# Intro to Penguins
+Today, we will work with the PalmerPenguin data to learn _rmarkdown_.
+
+# Now load your libraries 
+
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+library(here)
+```
+ 
+# Inspect the data
+
+```{r}
+glimpse(penguins)
+```
+
+# Make a Plot! 
+
+```{r}
+penguins %>%
+  drop_na() %>%
+  ggplot(aes(x = year, y = body_mass_g, 
+                       group = year)) +
+  geom_jitter() +
+  geom_violin() +
+  facet_wrap(~species) 
+```
+

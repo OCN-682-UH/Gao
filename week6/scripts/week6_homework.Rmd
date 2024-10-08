@@ -1,0 +1,86 @@
+---
+author: Diana Gao
+date: 2024/10/8
+title: Week 6 Homework
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: cerulean
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, # show code
+                      message = FALSE, # no messages
+                      warning = FALSE, # no warnings
+                      fig.path = "../output/") # set path for fig outputs
+```
+#### Prompt:
+Take any of the data sheets you have already worked with in class and create at least one table and one figure in an Rmarkdown file. Create the most beautiful RMarkdown output you can in either an html, github doc, or pdf format. **YOU MUST KNIT THE FILE** Make sure you have headings with clear explanations of what you are doing. Practice using markdown formatting with bold, italics, and lists (use each of these at least once). Make sure your outputs and scripts are saved in the appropriate folders. Keep proper coding etiquette (figures need to be pub quality as usual and you need to comment your code).
+
+# Data wrangling
+
+#### Load Libraries
+```{r}
+library(tidyverse)
+library(here)
+library(lubridate)
+library(kableExtra)
+```
+
+#### Loading in the Data
+I will use the condition data from last week :)
+```{r}
+cond <- read.csv(here("week6", "data", "CondData.csv"))
+```
+#### View data
+This is to check the column headers and date format
+```{r}
+glimpse(cond)
+```
+
+#### Mutate date with lubridate
+```{r}
+condISO <- cond %>%
+  mutate(date = mdy_hms(date))
+```
+# Data Analysis
+Now that the data is cleaned up, can analyze and plot it :)  
+
+#### Make summary table
+Steps:  
+1. Mutate date column so that all times are rounded down to the *hour*  
+2. Group the data by date (aka by the hour)  
+3. Make a summary table with average salinity and temperature  
+4. Add a column which is avg salinity / temp
+
+```{r, CondAverage}
+CondSum <- condISO %>%
+  mutate(date = floor_date(date, unit = "hour")) %>% # makes dates round down to nearest hour
+  group_by(date) %>%
+  summarise(Average_Salinity = mean(Salinity, na.rm = TRUE), Average_Temperature = mean(Temperature, na.rm = TRUE)) %>%
+  mutate(Avg_Salinity_Over_Temp = Average_Salinity/Average_Temperature)
+```
+#### Turn it into a kable
+So that it looks all nice :)
+```{r}
+CondSum %>%
+  kbl(caption = "Average salinity and temperature by the hour") %>% # make it a kable table, add caption
+  kable_styling(bootstrap_options = "striped", position = "center", full_width = FALSE) %>% #striped rows, center align, not full width
+  kable_classic_2() # make theme material
+```
+
+#### Make a figure
+
+```{r, AvgSOverT, fig.cap= "Figure 1: This is a bar plot of average salinity/temperature by the hour", out.width="70%"}
+CondSum %>%
+  drop_na() %>%
+  ggplot(aes(x = date, y = Avg_Salinity_Over_Temp)) +
+  geom_col(fill = "steelblue2") +
+  labs(title = "Average Salinity to Temperature Ratio per Hour",
+       subtitle = "Taken on 2021/1/15",
+       x = "Time", 
+       y = "Average Salinity over Temperature (C)") + 
+  scale_y_continuous(expand=c(0, 0), limits=c(0, 1.75)) +
+  theme_bw()
+```

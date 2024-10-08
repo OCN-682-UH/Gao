@@ -1,0 +1,59 @@
+---
+title: "Week 6 Video Lecture Notes"
+author: "Diana Gao"
+date: "2024-10-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+## Loading Libraries
+
+``` {r}
+library(palmerpenguins)
+library(tidyverse)
+library(kableExtra)
+```
+# Inspect the data
+
+```{r}
+glimpse(penguins)
+```
+## Penguin plot
+
+You can also embed plots, for example:
+
+```{r, penguinplot, fig.cap= "This is a violin plot of body mass every year of penguins", dev="pdf" }
+penguins %>%
+  drop_na() %>%
+  ggplot(aes(x = year, y = body_mass_g, 
+                       group = year)) +
+  geom_jitter() +
+  geom_violin() +
+  facet_wrap(~species) #same graph as in class ex
+```
+## Type out tables by hand
+
+| Time  | Session | Topic    |
+|:------|:-------:|---------:|
+| _left_ | _center_| _right_ |
+| 01:00  | 1       | Anatomy |
+| 01:50  |         | *Break* |
+| 02:00  | 2       | Tables  |
+| 02:45  |         | *Break* |
+
+```{r}
+penguins %>%
+  group_by(species) %>%
+  summarise(billmean = mean(bill_length_mm, na.rm = TRUE)) %>%
+  kbl() %>% # make it a kable table
+  kable_classic() %>% # change the table theme
+  row_spec(2, bold = T, color = "white", background = "red") %>% # make row 2 red, make row2 text bolded and white
+   kable_styling(full_width = FALSE)
+```
+

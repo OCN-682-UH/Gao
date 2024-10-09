@@ -1,0 +1,120 @@
+---
+title: "Week 7 In Class Notes"
+subtitle: "Learning maps!"
+author: "Diana Gao"
+date: "2024-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, # no messages
+                      warning = FALSE, # no warnings
+                      fig.path = "../output/")
+```
+
+# Setup
+
+#### Load Libraries
+
+```{r}
+library(tidyverse)
+library(here)
+library(maps)
+library(mapdata)
+library(mapproj)
+```
+
+#### Read in Data
+
+```{r}
+# Read in data on population in California by county
+popdata<-read_csv(here("week7","data","CApopdata.csv"))
+#read in data on number of seastars at different field sites
+stars<-read_csv(here("week7","data","stars.csv"))
+```
+
+#### View the data 
+```{r}
+view(popdata)
+view(stars)
+```
+
+#Map Stuff
+
+#### Pull world base map
+```{r}
+world<-map_data("world")
+head(world)
+```
+
+#### Now plot this world map
+```{r}
+ggplot()+
+  geom_polygon(data = world, aes(x = long, y = lat, group = group, fill = region),# change fill color by 
+          color = "black") + # make black outlines for ea country
+      guides(fill = FALSE) + # remove legend
+      theme_minimal() + 
+      theme(panel.background = element_rect(fill = "lightblue")) + 
+  coord_map(projection = "mercator",
+            xlim = c(-180,180)) # make sure all the data is within the map properly :) 
+```
+## California time
+
+#### Use the states dataset
+``` {r}
+states<-map_data("state")
+head(states)
+CA_data<-states %>%
+  filter(region == "california")
+```
+
+#### Now plot map of cali
+```{r}
+ggplot()+
+  geom_polygon(data = CA_data, aes(x = long, y = lat, group = group)) +
+  coord_map(projection = "mercator")
+```
+
+#### Now bring in population by county data
+```{r}
+counties<-map_data("county")
+head(counties)
+head(popdata)
+```
+##### Change the header names to match 
+```{r}
+CApop_county <- popdata %>%
+  select("subregion" = County, Population)  %>% # rename the county col
+  inner_join(counties) %>%
+  filter(region == "california") # some counties have same names in other states
+view (CApop_county)
+```
+
+#### Now plot map of cali with county pop density
+```{r}
+ggplot()+
+  geom_polygon(data = CApop_county, aes(x = long, 
+                                   y = lat, 
+                                   group = group, 
+                                   fill = Population)) +
+  scale_fill_gradient(trans = "log10") + # scale color gradient so that you can actually see counties besides LA 
+  coord_map(projection = "mercator")
+```
+
+#### Now add points of starfish info
+```{r}
+ggplot()+
+  geom_polygon(data = CApop_county, aes(x = long, 
+                                   y = lat, 
+                                   group = group, 
+                                   fill = Population)) +
+  scale_fill_gradient(trans = "log10") + # scale color gradient so that you can actually see counties besides LA 
+    geom_point(data = stars, # add a point at all my sites
+             aes(x = long,
+                 y = lat,
+                 size = star_no))+
+  coord_map(projection = "mercator") + 
+  labs(size = "# stars/m2") 
+ggsave(here("week7","output","CApop.pdf"))
+
+```

@@ -1,0 +1,94 @@
+---
+title: "Week 7 At Home Lecture Notes"
+author: "Diana Gao"
+date: "2024-10-15"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+# Setup
+
+#### Load Libraries
+
+```{r}
+library(tidyverse)
+library(hms)
+library(here)
+library(maps)
+library(mapdata)
+library(mapproj)
+library(gganimate)
+library(gifski)
+library(tidytuesdayR)
+#library(CatterPlots) # I really wanted to make the points a cat moving around but couldnt figure it out lol
+```
+
+#### Read in the Data
+I chose to use the data from 2023-01-31, "cats on the move!" This data tracks the movement of cats in the UK :)
+
+```{r}
+tuesdata <- tidytuesdayR::tt_load('2023-01-31')
+tuesdata <- tidytuesdayR::tt_load(2023, week = 5)
+
+cats_uk <- tuesdata$cats_uk
+cats_uk_reference <- tuesdata$cats_uk_reference
+```
+#### Filter the Data
+I decided to follow coco and map her journey :)
+```{r}
+is.character(cats_uk$timestamp) #character is no, must change to character
+cats_uk$timestamp <- as.character(cats_uk$timestamp) # change timestamp to character
+#is.character(cats_uk$timestamp) #Just to check again :)
+coco_data <- cats_uk %>%
+  mutate(time = ymd_hms(timestamp)) %>% # for some reason wasn't working when I named column timestamp?? so I just made new column named time
+  mutate(only_time = as_hms(time)) %>% # make a col with only the time
+  mutate(day = round_date(time, "day")) %>% # make a col with only the date
+  filter(tag_id == "Coco") # select only coco's data points
+
+```
+
+# Plotting
+
+#### Make map of UK
+Here is where Coco lives within the UK 
+```{r, where_is_coco}
+UK <- map_data(map = "world", region = "UK") # select the UK region out of the world map, unfortunately subregion is only based on landmasses ^^'
+ggplot() + 
+  geom_polygon(data = UK, aes(x = long, y = lat, group = group)) +
+  geom_point(data = coco_data, aes(x = location_long, y = location_lat), 
+             color = "red", size = 1) +
+  coord_map()
+```
+
+#### Plotting Coco's movement
+Looking at coco_data, can see that her movement is limited to x = -5.077785, -5.073802 and y = 50.15111, 50.15638. So I will plot UK and zoom in to that general area so we can have enough spatial resolution to animate her moving around
+```{r}
+coco_moving <- ggplot() + 
+  geom_point(data = coco_data, aes(x = location_long, y = location_lat), 
+             color = "red", size = 3) +
+  lims (x = c(-5.0785, -5.072), y = c(50.15, 50.157)) +
+  coord_map() +
+  facet_wrap(~day) + # separate graphs for each day
+  labs(title = 'Hour: {frame_time}', x = '', y = '') + #remove x and y axes and set title for each
+  transition_time(only_time) + # animate by the data in time column
+  ease_aes('linear') # 
+```
+#### Render the animation
+```{r, cocomoving}
+animate(coco_moving, nframes = 200, #make into 200frames
+        fps = 24, #set the frame by 20 frame per seconds
+        width = 10, height = 4, units = "in",  #set the width and length of the frames using px
+        renderer = gifski_renderer()) # render w gifski
+
+```
+

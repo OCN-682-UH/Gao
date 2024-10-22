@@ -76,7 +76,7 @@ Looking at coco_data, can see that her movement is limited to x = -5.077785, -5.
 coco_moving <- ggplot() + 
   geom_point(data = coco_data, aes(x = location_long, y = location_lat), 
              color = "red", size = 3) +
-  lims (x = c(-5.0785, -5.072), y = c(50.15, 50.157)) +
+  lims (x = c(-5.0785, -5.072), y = c(50.151, 50.1564)) +
   coord_map() +
   facet_wrap(~day) + # separate graphs for each day
   labs(title = 'Hour: {frame_time}', x = '', y = '') + #remove x and y axes and set title for each
@@ -84,10 +84,10 @@ coco_moving <- ggplot() +
   ease_aes('linear') # 
 ```
 #### Render the animation
-```{r, cocomoving}
+```{r, cocomoving, fig.width=8, fig.height=4}
 animate(coco_moving, nframes = 200, #make into 200frames
         fps = 24, #set the frame by 20 frame per seconds
-        width = 10, height = 4, units = "in",  #set the width and length of the frames using px
+        width = 8, height = 4, units = "in",  #set the width and length of the frames using in
         renderer = gifski_renderer()) # render w gifski
 
 ```

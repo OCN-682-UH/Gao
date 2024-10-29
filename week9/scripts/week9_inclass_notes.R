@@ -125,8 +125,8 @@ myplot(x = body_mass_g, y = flipper_length_mm)+
 a <- 4
 b <- 5
 if (a > b) { # my question
-  f <- 20 # if it is true give me answer 1
-} else { # else give me answer 2
+  f <- 20 # if it is true give me answer 10
+} else { # else give me answer 20
   f <- 10
 }
 # when you return f it says 10,so a < b :D

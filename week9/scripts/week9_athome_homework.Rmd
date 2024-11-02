@@ -1,0 +1,66 @@
+---
+title: "Week 9 at home lecture homework"
+author: "Diana Gao"
+date: "2024-11-02"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+# Setup
+
+#### Load Libraries
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+#### Load in Data
+```{r}
+data <- read_csv(here("week9", "data", "intertidaldata.csv"))
+site_loc <- read_csv(here("week9", "data", "intertidaldata_latitude.csv"))
+```
+
+# Data Cleaning
+
+My goal is to plot the number of mussels per site.  
+First, I will clean the names of the latitude dataset
+```{r}
+clean_loc <- site_loc %>%
+  clean_names()
+```
+
+Then, I will clean the data, only keeping relevant columns
+```{r}
+clean <- data %>%
+  clean_names() %>%
+  group_by(site) %>%
+  summarise(across(algae:stars_counts, ~sum(.x,na.rm = TRUE)))%>%
+  distinct() %>%
+  select(site, mussels) %>%
+  left_join(clean_loc, by = "site") %>%
+  mutate(site = factor(site))
+```
+
+# Plotting
+Now to put it all together! I will order the site names by their latitude. 
+```{r, Mussels_per_site}
+ggplot(clean, aes(x = fct_reorder(site, latitude), y = mussels)) + 
+  geom_col() + 
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(title = "Number of Mussels at each site", subtitle = "Highest latitude at top, lowest at bottom", x = "Site Name", y = "Mussels") +
+  coord_flip() + 
+  theme_classic()
+
+```
+

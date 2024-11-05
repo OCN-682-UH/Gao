@@ -1,0 +1,112 @@
+---
+title: 'Tidy Tuesday Homework 1: Week of Oct. 28th'
+author: "Diana Gao"
+date: "2024-11-05"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+Goal of this analysis was to compare the popularity of horror monster movies with their rating. I wanted to see if more popular movies tend to be more highly rated (which is what I would think, if it's bad why would people see it?)
+
+# Setup
+
+#### Load the Libraries 
+```{r}
+library(tidytuesdayR)
+library(tidyverse)
+library(here)
+```
+
+
+#### Load in Data
+This week I will be using the "monster movie" dataset from TidyTuesday, week of Oct. 28th. 
+
+```{r}
+tuesdata <- tidytuesdayR::tt_load('2024-10-29')
+monster_movie_genres <- tuesdata$monster_movie_genres
+monster_movies <- tuesdata$monster_movies
+```
+
+
+#### Functions
+This dataset has some outliers - namely a few super duper popular movies that I want to cut out. But I don't want to do this arbitrarily - so I will make a function.   
+
+First: a function to detect outliers. This is done by splitting the data into quantiles (I chose 4 quartiles), and detecting any data points which fall outside of these quartiles. 
+
+```{r pressure}
+detect_outlier <- function(x) {
+  Quantile1 <- quantile(x, probs=.25) # calc first quantile limit
+  Quantile3 <- quantile(x, probs=.75) # calc third quantile limit
+  IQR = Quantile3 - Quantile1 # calculate interquartile range
+  x > Quantile3 + (IQR * 1.5) | x < Quantile1 - (IQR * 1.5) # return true if x is outside of the quartiles by .5x of the IQR
+}
+```
+This function is not used directly, but will be called upon by the second function...
+
+Which removes outliers -- This function can work for removing outliers pulling from multiple columns, though in this dataset I am planning to just do it for one. It will say which cols were removed from the data as well.
+
+```{r}
+remove_outlier <- function(dataframe, columns = names(dataframe)) {
+  for (col in columns) { # for loop to traverse in columns vector
+    dataframe <- dataframe[!detect_outlier(dataframe[[col]]), ]   # remove observation if it satisfies detect_outlier function
+  }
+  print("Remove outliers") # shows all kept data, can check which ones were removed
+  print(dataframe) # return dataframe
+}
+```
+
+# Cleaning the data
+Now, to clean up the data so it only holds info relevant to our plot :)  
+
+#### Trimming og dataframes
+First up, looking at the data, monster_movies has the column "titletypes" which shows what kind of media the piece is (movie, video, or tvmovie). I will clean this up so that it only has movies in it. 
+```{r}
+cleaned_movie_names <- monster_movies %>%
+  filter(title_type == "movie", na.rm = TRUE)
+```
+
+Next, the monster_movie_genres data contains info of each movie's listed genres on IMDb. I want to only select movies with "horror" as a listed genre. 
+
+```{r}
+cleaned_horror_movies <- monster_movie_genres %>%
+  filter(genres == "Horror", na.rm = TRUE)
+```
+
+#### Combining then Editing
+Then, inner join the two tables so that the final dataframe has only monster MOVIES with the HORROR genre tag, and only keep relevant data. I will also clean out the outliers (movies with a huge amount of votes) and bin the movies into "old" (pre-2010), and "new" (post-2010) movies.
+
+```{r}
+horror_movies <- cleaned_movie_names %>%
+  inner_join(cleaned_horror_movies, by = "tconst") %>% # merge two tables so only movies with horror as a genre are kept
+  select(primary_title, average_rating, year, num_votes) %>% # keep only relevant columns
+  remove_outlier(columns = "num_votes") %>% # remove outliers from dataset - seems like mostly the super popular ones (>~5k votes)
+  mutate(year_bin = if_else(year > 2010, "new", "old")) # when data is evenly split along year, median year 2012 is cut in to the two diff bins. Set bins so movies released before 2010 are old and 2011 or later is new
+```
+
+# Plotting
+Plot this data! Number of votes on the x-axis, average rating on the y axis. I will separate new and old movies to see if there are different trends.
+```{r, monster_movie_rating_vs_popularity}
+ggplot(horror_movies, aes(x = num_votes, y = average_rating)) + 
+  geom_point() +
+  scale_x_continuous(trans="log10") + # there are a lot of movies with <50 ratings, so log transform the x axis to make the data more readable
+  geom_smooth() + # add trend line
+  facet_grid(rows = vars(year_bin)) + # make separate plots for new and old movies
+  labs(title = "Popularity vs average rating of old and new movies",
+       subtitle = "Using monster movie dataset from TidyTuesday :)",
+       caption = "Data originally from IMDb", 
+       x = "Number of Votes", 
+       y = "Average Rating (out of 10)") +
+  theme_bw()
+```
+
+It seems like my assumption that popular movies would have high ratings was incorrect. It generally seems like old monster movies that are niche (low votes) and popular(high votes) having higher ratngs. But the pattern is much more confusing in new movies. Seems like niche movies are a lot more hit-or-miss, but the graph implies there is a "sweet spot" of popularity between 50-100 votes. Not really sure tho. Anyway a cool exercise nonetheless :)

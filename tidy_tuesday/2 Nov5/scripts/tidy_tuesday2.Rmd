@@ -1,0 +1,70 @@
+---
+title: 'Tidy Tuesday Homework 2: Week of Nov. 5th'
+author: "Diana Gao"
+date: "2024-11-12"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+# Setup
+
+#### Load the Libraries 
+```{r}
+library(tidytuesdayR)
+library(tidyverse)
+library(here)
+library(gganimate)
+```
+
+
+#### Load in Data
+This week I will be using the "Democracy and Dictatorship" dataset from TidyTuesday, week of Nov. 5th
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2024, week = 45)
+democracy_data <- tuesdata$democracy_data
+```
+
+# Cleaning the Data 
+My idea is to plot the number of democratic, communist, and monarchy governments every year and to animate this with gganimate.
+
+Today the goal is to learn to use gganimate with line geoms. I struggled to correctly count the number of is_xxx = TRUE as I was trying the count() function but it said it didn't work on logical data. 
+```{r}
+clean <- democracy_data %>%
+  select(country_name, year, is_democracy, is_communist, is_monarchy) %>% # keep only desired cols
+  group_by(year) %>%
+  mutate(democracy = sum(is_democracy, na.rm = TRUE), 
+            communist = sum(is_communist, na.rm = TRUE), 
+            monarchy = sum(is_monarchy, na.rm = TRUE)) %>% # count how many of each regime there are per year
+  select(year, democracy, communist, monarchy) %>% # only keep the relevant columns
+  pivot_longer(!year, names_to = "regime", values_to = "count") # pivot data to longer so they can all be plotted at once with a line geom
+```
+
+# Plotting
+I also struggled a bit to combine plots of all three different regimes before realizing I had to make the data into a longer format. The plotting went smoothly once I figured out the correct animation function (transition_reveal)
+```{r, regimes_over_time}
+animation <- clean %>%
+  ggplot(aes(x = year, y = count, 
+             color = regime)) +
+  geom_line() + 
+  labs(title = "Number of democratic, communist, and monarchist countries over time", 
+       caption = "Data is from tidyTuesday 2024-11-15", 
+       x = "Year", 
+       y = "Number of Nations") + 
+  theme_bw() +
+  transition_reveal(year)
+
+animate(animation, nframes = 200, #make into 200 frames
+        fps = 24, #set the framerate to be 24 frames per seconds
+)
+```
+

@@ -1,0 +1,12 @@
+name: week11
+title: week11
+username: dianagao
+account: dianagao
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13378651
+bundleId: 9382810
+url: https://dianagao.shinyapps.io/week11/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

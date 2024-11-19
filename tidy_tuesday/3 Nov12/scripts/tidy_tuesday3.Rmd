@@ -1,0 +1,120 @@
+---
+title: "Tidy Tuesday Homewwork 3: Week of Nov. 12th"
+author: "Diana Gao"
+date: "2024-11-19"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+Today I will be learning the rworldmap and classInt packages to plot the ISO country data from TidyTuesday :) Originally, I tried to use the "map" and "mapdata" packages but their country names did not match the tidy tuesday ones. However, the the map data in therworldmap package does contain ISO codes. I wanted to learn classInt to have an easy way to make class intervals/breaks to data. 
+
+# Setup
+
+#### Load the Libraries 
+
+```{r}
+library(tidyverse)
+library(here)
+library(tidytuesdayR)
+library(stringr)
+library(rworldmap) # tried to use "map" and "mapdata" packages but their country names did not match the tidy tuesday ones :(
+                  # the map data in this package does contain ISO codes 
+library(PNWColors)
+library(classInt)
+```
+
+#### Load the Data
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2024, week = 46)
+
+countries <- tuesdata$countries
+country_subdivisions <- tuesdata$country_subdivisions
+```
+
+# Clean the Data
+
+#### Count
+First, make a dataframe with the count (number) of subdivisions in each country: 
+```{r}
+count_subdiv <- country_subdivisions %>%
+  select(name, alpha_2) %>% # select only the subdivisions and alphas
+  rename(subdivision = name) %>% # rename to subdivisions so stuff doesn't get confusing w the join
+  left_join(countries, join_by(alpha_2)) %>% #join on so that each subdiv has the data of the country it is a a part of
+  group_by(name) %>%
+  count(name)
+```
+
+#### Names
+Next, make a dataframe with a column that has the concatenated names of the subdivisions of each country. Originally, wanted to make a leaflet with this so that when you click on a country it would list the subdivision names. But I spent waaaay too much time on figuring out how to use the map package before giving up and using a diff package lol. 
+```{r}
+name_subdiv <- country_subdivisions %>%
+  select(name, alpha_2) %>% # select only the subdiv and alphas
+  rename(subdivision = name) %>% # clean subdivisions so stuff doesn't get confusing w join
+  left_join(countries, join_by(alpha_2)) %>% #join on so that each subdiv has the data of the country it is a a part of
+  group_by(name) %>%
+  summarise(subdivision = str_c(subdivision, collapse=", "))
+```
+
+#### Joining it all together
+Now, join the subdivision count and concatenated names together, then join them back to the OG countries dataframe so that all the ISO data is back
+```{r}
+clean <- name_subdiv %>%
+  left_join(count_subdiv, join_by(name)) %>%
+  left_join(countries, join_by(name))
+```
+
+rworldmap has it's own unique funciton for joining data to their world map. This is me using it to join the above dataframe to their map. 
+```{r}
+map_with_data <- joinCountryData2Map(clean, 
+                    joinCode = "UN", # what kind of code is being used in the join
+                    nameJoinColumn = "numeric", # what column in the user-added data should contain the above codes
+                    nameCountryColumn = "name") # console readout to see if any countries got missed (in my case 2 failed)
+```
+
+# Plotting
+
+But first, we have to set up a little more info for our map :) This is where classInt comes in! 
+
+```{r}
+pal<-pnw_palette("Lake", type = "continuous") # make a color palette
+classInt <- classIntervals(map_with_data$n, style="jenks")
+catMethod = classInt[["brks"]] # set the values for the legend breaks
+```
+
+
+#### Continuous legend
+First, I tried a continuous legend. But it didn't really look to great; the UK and european contries had far too many subdivisions; it pulled the legend so far out:
+
+```{r, continuous}
+fin_map <- mapCountryData(map_with_data, 
+               nameColumnToPlot="n", # data plotted is count
+               addLegend=FALSE, # remove default legend
+               numCats = 100,
+               catMethod = "fixedWidth", # set breaks method
+               colourPalette = pal) # palette is set to pal defined earlier
+do.call(addMapLegend, c(fin_map, legendWidth=0.5, legendMar=2)) # make the legend nicer lol
+
+```
+
+#### With Breaks
+This is where I brought back the catMethod object I made earlier. I made breaks to the data so the color ramp would be a little better, and the resolution of the color would not be so skewed by the few countries with a huge amount of subdivisions.
+```{r, breaks}
+fin_map <- mapCountryData(map_with_data, 
+               nameColumnToPlot="n", # data plotted is count
+               addLegend=FALSE, # remove default legend
+               catMethod = catMethod, # set breaks method
+               colourPalette = pal) # palette is set to pal defined earlier
+do.call(addMapLegend, c(fin_map, legendLabels="all", legendWidth=0.5, legendIntervals="data", legendMar=2)) # make the legend nicer lol
+
+```
+

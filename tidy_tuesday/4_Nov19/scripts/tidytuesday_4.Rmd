@@ -1,0 +1,114 @@
+---
+title: 'Tidy Tuesday Homework 4: Week of Nov. 19th'
+author: "Diana Gao"
+date: "2024-11-26"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+Today I will be trying to do a principal component analysis (PCA) on the Bobs Burgers tidy tuesday dataset. 
+
+# Setup
+To do this I will use a few new packages: corrr, ggcorrplot, FactoMineR, and factoextra.
+
+### Load libraries
+```{r}
+library(tidyverse)
+library(corrr)
+library(ggcorrplot)
+library(FactoMineR)
+library(factoextra)
+```
+
+### Load the data
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2024, week = 47)
+episode_metrics <- tuesdata$episode_metrics
+```
+
+# Analysis 
+
+### Clean the Data
+First, I want to exclude the seasons from this analysis as I will be treating it like the "species" lol
+```{r}
+clean <- episode_metrics %>%
+  select(!season)
+```
+
+The data consists of multiple numeric variables, each on different scales. Therefore, I have to normalize the data first. I will use z-score normalization to do this: 
+```{r}
+norm <- scale(clean) # normalize the data (z score normalization)
+#head(norm)
+```
+
+### PCA
+These packages have nice built in functions to do this :) so doing PCA is super easy: 
+```{r}
+data.pca <- princomp(norm) # pca analysis on normalized data
+```
+Once we have this data, we can look at a summary table of the PCs: 
+```{r}
+summary(data.pca) # summary of PCA showing stats of every PC generated
+```
+
+Looking at the PCA summary, this shows that the first PC explains ~38% of dta, the next explains about ~19% (total 57%). so doesn't explain the data suuuuuuper well but explains the majority 
+
+We can also look at the loading matrix for PC1+PC2
+```{r}
+data.pca$loadings[, 1:2] # look at loading matrix for first two PCs
+```
+
+So pc1 has high **positive** values (~.5) for _dialogue density and average length_, with only a slight **negative** value (-.05) for _unique words_.
+
+PC2 has super high (~.7) **positive** value for _unique words_, and high **negative** value (~.45) for _exclamation ratio_.
+
+Not super sure how to interpret these results, but intersting that PC2 is really dominated by the unique words. 
+
+# Plotting
+We can plot the data in various ways to help visualize! 
+
+### Scree Plot
+This plot basically shows how much of the data each PC explains. It is typically used to see how many PCs to retain.
+```{r, scree}
+fviz_eig(data.pca, addlabels = TRUE) # scree plot
+```
+Seems in my case maybe it would be better to retain 1-4 since pc 2, 3, and 4 are kinda similar in value? idk really not super versed in how to determine this lol i'll just keep it to pc1 + 2. 
+
+
+### Biplot
+Next is a biplot of the attributes! 
+```{r, biplot}
+fviz_pca_var(data.pca, col.var = "black") # biplot
+```
+
+So _average length, dialogue density, question ratio, and sentiment variance_ all are positively correlated with eachother since they are going the same direction. And looks like _average length_ is the most well-represented variable (furthest from the origin)
+
+### Contribution of each variable 
+This plot is to show the cos2 values of each variable to PC 1&2. Basically, shows how much PC1&2 represents each variable. 
+```{r, cos2}
+fviz_cos2(data.pca, choice = "var", axes = 1:2) # contribution of each variable. so avg length is the most well represented variable in pc1 and 2 
+```
+
+This plot shows that _average length_ is the variable most well represented by PC1&2. 
+
+### Plotting of individuals on PC axes
+Now for the PCA plot we are all probably most familiar with: 
+```{r, pc_axes}
+fviz_pca_ind(data.pca,
+             label = "none", # hide individual labels
+             habillage = episode_metrics$season, # color by groups
+             addEllipses = TRUE # Concentration ellipses
+             )
+```
+
+It's kinda messy, but you can see that most seasons are grouped tightly, with season 13 and 14 being outliers and grouping separate. So shows that most seasons are pretty similar, except s13 and s14 (which are more similar to each other than the other seasons). Also does seem s1&2 slightly peel off from the other in-between seasons, but not to the degree s13&14 do. 

@@ -1,0 +1,65 @@
+---
+title: 'Tidy Tuesday Homework 4: Week of Nov. 26th'
+author: "Diana Gao"
+date: "2024-12-1"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE, 
+                      fig.path = "../output/") #set directory for the figures to go in to
+```
+
+As introduced in Dr. Silbiger's slack, I will be trying out tidyplots today! 
+
+# Setup
+### Load the libraries 
+```{r}
+library(tidyverse)
+library(tidyplots)
+library(here)
+```
+
+### Load in the data 
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2024, week = 48)
+
+cbp_resp <- tuesdata$cbp_resp
+cbp_state <- tuesdata$cbp_state
+```
+
+### Data cleaning
+
+I will be looking at the number of individuals encountered at all borders, looking to see if the amount changed from 2020-2024 and if the title they were processed under changed. Thus, I only need a few columns of data and the overall number of individuals per year per title (rather than number of individuals for each encounter)
+
+```{r}
+cbp_clean <- cbp_resp %>%
+  select(fiscal_year, title_of_authority, encounter_count) %>% # only save these cols
+  group_by(title_of_authority, fiscal_year) %>% # group by both title of authority and fiscal year
+  count() # count the number of individuals by the groups above
+
+```
+
+# Plotting
+
+Now for the new stuff, trying out tidyplots! I made a stacked bar chart: 
+```{r, title_count_per_year.png}
+cbp_clean %>%
+  tidyplot(x = fiscal_year, 
+           y = n, 
+           color = title_of_authority) %>%
+  add_barstack_absolute() %>% # stacked barchart geom
+  adjust_title("Number of individuals encountered per fiscal year") %>% # changing names and stuff
+  adjust_x_axis_title("Fiscal Year") %>%
+  adjust_y_axis_title("Number of Individuals Encountered") %>%
+  adjust_legend_title("Title of Authority") #%>%
+  # save_plot(here("tidy_tuesday", "5_Nov26", "output", "titles.png")) # in basic code I would save using this function :)
+```
+
+The "structure" of the code is definetly different from ggplot, but I really like that you can use the maggittr pipe with it! Also, I feel like the commands are more intuitively named, and thus easier to search and find. Overall, I like it! 
